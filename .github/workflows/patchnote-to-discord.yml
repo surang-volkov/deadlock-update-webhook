@@ -30,4 +30,4 @@ jobs:
           DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
           STEAM_APPID: ${{ vars.STEAM_APPID }}
           DEBUG: ${{ vars.DEBUG }}
-        run: python notify.py
+        run: python main.py
