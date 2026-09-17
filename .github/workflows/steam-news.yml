@@ -1,0 +1,35 @@
+name: Steam 패치노트 -> 디스코드
+
+on:
+  schedule:
+    # GitHub Actions의 cron은 정확한 시각을 보장하지 않고 부하에 따라 밀릴 수 있어요.
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}  # Actions 탭에서 수동 실행 버튼도 쓸 수 있게
+
+jobs:
+  check-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      # 마지막으로 본 글(last_guid.txt)을 캐시에 저장/복원.
+      # 캐시 키는 매번 달라야 새 내용으로 다시 저장되므로 run_id를 붙이고,
+      # restore-keys 접두사로 가장 최근 캐시를 불러옴.
+      - uses: actions/cache@v4
+        with:
+          path: last_guid.txt
+          key: last-guid-${{ github.run_id }}
+          restore-keys: |
+            last-guid-
+
+      - name: RSS 확인 및 웹훅 전송
+        env:
+          DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
+          STEAM_APPID: ${{ vars.STEAM_APPID }}
+        run: python notify.py
