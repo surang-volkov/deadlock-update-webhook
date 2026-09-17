@@ -1,4 +1,4 @@
-name: Steam 패치노트 -> 디스코드
+name: PatchnoteToDiscord
 
 on:
   schedule:
