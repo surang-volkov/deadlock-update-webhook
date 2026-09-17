@@ -23,7 +23,7 @@ import feedparser
 import requests
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("steam-webhook-notify")
+log = logging.getLogger("patchnote-to-discord")
 
 STEAM_APPID = os.environ.get("STEAM_APPID", "1422450")
 STATE_FILE = os.environ.get("STATE_FILE", "last_guid.txt")
@@ -51,7 +51,7 @@ def html_to_discord_text(html: str, link: str) -> str:
     text = MULTI_NEWLINE.sub("\n\n", text).strip()
 
     if len(text) > EMBED_DESC_LIMIT:
-        text = text[:EMBED_DESC_LIMIT].rstrip() + f"\n\n...(내용이 길어 생략됨, [전체 보기]({link}))"
+        text = text[:EMBED_DESC_LIMIT].rstrip() + f"\n\n...([전체 보기]({link}))"
     return text
 
 
@@ -75,7 +75,6 @@ def build_embed(entry) -> dict:
         "url": link,
         "description": html_to_discord_text(entry.get("description", ""), link),
         "color": STEAM_BLUE,
-        "footer": {"text": f"Steam 뉴스 · {entry.get('published', '')}".strip(" ·")},
     }
 
 
@@ -88,44 +87,46 @@ def send_to_webhooks(webhooks: list[str], embed: dict) -> None:
         resp = requests.post(url, json=payload, timeout=15)
         if resp.status_code == 429:
             retry_after = resp.json().get("retry_after", 1)
-            log.warning("레이트리밋, %s초 대기", retry_after)
+            log.warning("Ratelimit, waited for %s seconds", retry_after)
             time.sleep(float(retry_after) + 0.5)
             resp = requests.post(url, json=payload, timeout=15)
         if resp.status_code >= 300:
-            log.error("웹훅 전송 실패 (%s): %s", resp.status_code, resp.text[:300])
+            log.error("Failed to send webhooks (%s): %s", resp.status_code, resp.text[:300])
         else:
-            log.info("웹훅 전송 완료: %s...", url[:50])
-        time.sleep(1)  # 웹훅 간 레이트리밋 여유
+            log.info("Successful sending webhooks: %s...", url[:50])
+        time.sleep(1)
 
 
 def main() -> int:
     raw_webhooks = os.environ.get("DISCORD_WEBHOOKS", "")
     webhooks = [w for w in raw_webhooks.split(",") if w.strip()]
     if not webhooks:
-        log.error("DISCORD_WEBHOOKS 환경 변수가 비어있어요.")
+        log.error("DISCORD_WEBHOOKS env secret is empty.")
         return 1
 
     feed = feedparser.parse(RSS_URL)
     if not feed.entries:
-        log.warning("RSS에 항목이 없어요: %s", RSS_URL)
+        log.warning("RSS has no item.: %s", RSS_URL)
         return 0
 
     last_guid = load_last_guid()
 
-    if last_guid is None:
-        # 최초 실행: 과거 글 스팸 방지, 기준점만 기록
+    if last_guid is None: #최초실행
         newest = feed.entries[0].get("id") or feed.entries[0].link
         save_last_guid(newest)
-        log.info("최초 실행: 기준 글을 %s 로 설정했어요.", newest)
+        log.info("Setting initial guid as %s", newest)
         return 0
 
     new_entries = []
     for entry in feed.entries:
         guid = entry.get("id") or entry.link
         if guid == last_guid:
+            log.info("디버그용 전송 테스트")
+            for entry in new_entries:
+                send_to_webhooks(webhooks, build_embed(entry))
             break
         new_entries.append(entry)
-    new_entries.reverse()  # 오래된 순으로 전송
+    new_entries.reverse()  # 글 오래된 순으로 전송
 
     if not new_entries:
         log.info("새 글 없음.")
@@ -134,9 +135,9 @@ def main() -> int:
     for entry in new_entries:
         send_to_webhooks(webhooks, build_embed(entry))
 
-    newest_guid = feed.entries[0].get("id") or feed.entries[0].link
+    newest_guid = feed.entries[0].get("guid")
     save_last_guid(newest_guid)
-    log.info("새 글 %d개 전송 완료.", len(new_entries))
+    log.info("Successful sending new %d announcements.", len(new_entries))
     return 0
 
 

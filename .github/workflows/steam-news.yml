@@ -1,10 +1,10 @@
-name: PatchnoteToDiscord
+name: patchnote-to-discord
 
 on:
   schedule:
-    # GitHub Actions의 cron은 정확한 시각을 보장하지 않고 부하에 따라 밀릴 수 있어요.
+    # default set to every 30 minutes. edit it if needed.
     - cron: "*/30 * * * *"
-  workflow_dispatch: {}  # Actions 탭에서 수동 실행 버튼도 쓸 수 있게
+  workflow_dispatch: {}
 
 jobs:
   check-and-notify:
@@ -18,9 +18,6 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      # 마지막으로 본 글(last_guid.txt)을 캐시에 저장/복원.
-      # 캐시 키는 매번 달라야 새 내용으로 다시 저장되므로 run_id를 붙이고,
-      # restore-keys 접두사로 가장 최근 캐시를 불러옴.
       - uses: actions/cache@v4
         with:
           path: last_guid.txt
@@ -28,7 +25,7 @@ jobs:
           restore-keys: |
             last-guid-
 
-      - name: RSS 확인 및 웹훅 전송
+      - name: RSS check and send Discord Webhooks
         env:
           DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
           STEAM_APPID: ${{ vars.STEAM_APPID }}
