@@ -28,8 +28,8 @@ log = logging.getLogger("patchnote-to-discord")
 STEAM_APPID = os.environ.get("STEAM_APPID", None)
 STATE_FILE = "last_guid.txt"
 RSS_URL = f"https://store.steampowered.com/feeds/news/app/{STEAM_APPID}/"
-COLOR = os.environ.get("COLOR", 0x1B2838)
-EMBED_DESC_LIMIT = os.environ.get("EMBED_DESC_LIMIT", 4000)
+COLOR = int(os.environ.get("COLOR", 0x1B2838), 16)
+EMBED_DESC_LIMIT = int(os.environ.get("EMBED_DESC_LIMIT", 4000))
 
 TAG_BR = re.compile(r"<br\s*/?>", re.IGNORECASE)
 TAG_P_OPEN = re.compile(r"<p[^>]*>", re.IGNORECASE)
