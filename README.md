@@ -15,10 +15,12 @@
 리포의 **Settings → Secrets and variables → Actions**에서:
 
 - **Secrets 탭**
-  - `DISCORD_WEBHOOKS` : 웹훅 URL. 여러 개면 쉼표(,)로 구분
+  - `DISCORD_WEBHOOKS`: 웹훅 URL. 여러 개면 쉼표(,)로 구분
     예) `https://discord.com/api/webhooks/aaa,https://discord.com/api/webhooks/bbb`
 - **Variables 탭** (선택, 비밀값 아니라 그냥 설정값)
-  - `STEAM_APPID` : 감시할 게임의 appid. 안 넣으면 오류반환
+  - `STEAM_APPID`: 감시할 게임의 appid. 안 넣으면 오류반환
+  - `COLOR`: 0xFFFFFF 포맷으로 임베드 색깔을 정할 수 있음.
+  - `EMBED_DESC_LIMIT`: 최대 4000자 까지 설정가능.
 
 ## 4. 확인
 **Actions 탭 → Steam 패치노트 -> 디스코드 → Run workflow**로 한 번 수동 실행해보기.

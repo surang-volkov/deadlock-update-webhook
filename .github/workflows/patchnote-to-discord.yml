@@ -30,4 +30,6 @@ jobs:
           DISCORD_WEBHOOKS: ${{ secrets.DISCORD_WEBHOOKS }}
           STEAM_APPID: ${{ vars.STEAM_APPID }}
           DEBUG: ${{ vars.DEBUG }}
+          COLOR: ${{ vars.COLOR }}
+          EMBED_DESC_LIMIT:  ${{ vars.EMBED_DESC_LIMIT }}
         run: python main.py

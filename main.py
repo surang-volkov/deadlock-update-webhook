@@ -28,9 +28,8 @@ log = logging.getLogger("patchnote-to-discord")
 STEAM_APPID = os.environ.get("STEAM_APPID", None)
 STATE_FILE = "last_guid.txt"
 RSS_URL = f"https://store.steampowered.com/feeds/news/app/{STEAM_APPID}/"
-
-STEAM_BLUE = 0x1B2838
-EMBED_DESC_LIMIT = 4000
+COLOR = os.environ.get("COLOR", 0x1B2838)
+EMBED_DESC_LIMIT = os.environ.get("EMBED_DESC_LIMIT", 4000)
 
 TAG_BR = re.compile(r"<br\s*/?>", re.IGNORECASE)
 TAG_P_OPEN = re.compile(r"<p[^>]*>", re.IGNORECASE)
@@ -51,7 +50,7 @@ def html_to_discord_text(html: str, link: str) -> str:
     text = MULTI_NEWLINE.sub("\n\n", text).strip()
 
     if len(text) > EMBED_DESC_LIMIT:
-        text = text[:EMBED_DESC_LIMIT].rstrip() + f"\n\n...([Read more]({link}))"
+        text = text[:EMBED_DESC_LIMIT].rstrip() + f"...([Read more]({link}))"
     return text
 
 
@@ -74,7 +73,7 @@ def build_embed(entry) -> dict:
         "title": (entry.get("title") or "(untitled)").strip()[:256],
         "url": link,
         "description": html_to_discord_text(entry.get("description", ""), link),
-        "color": STEAM_BLUE,
+        "color": COLOR,
     }
 
 
@@ -91,9 +90,9 @@ def send_to_webhooks(webhooks: list[str], embed: dict) -> None:
             time.sleep(float(retry_after) + 0.5)
             resp = requests.post(url, json=payload, timeout=15)
         if resp.status_code >= 300:
-            log.error("Failed to send webhooks (%s): %s", resp.status_code, resp.text[:300])
+            log.error("Failed to send webhooks.")
         else:
-            log.info("Successful sending webhooks: %s...", url[:50])
+            log.info("Successful sending webhooks.")
         time.sleep(1)
 
 
@@ -118,9 +117,6 @@ def main() -> int:
         newest = feed.entries[0].guid
         save_last_guid(newest)
         log.info("Setting initial guid as %s", newest)
-        if os.environ.get("DEBUG") == "true":
-            log.info("sending last announcement as debug test") 
-            send_to_webhooks(webhooks, build_embed(feed.entries[0]))
         return 0
 
     new_entries = []
@@ -133,6 +129,9 @@ def main() -> int:
 
     if not new_entries:
         log.info("No new updates.")
+        if os.environ.get("DEBUG") == "true":
+            log.info("sending last announcement as debug test") 
+            send_to_webhooks(webhooks, build_embed(feed.entries[0]))
         return 0
 
     for entry in new_entries:
