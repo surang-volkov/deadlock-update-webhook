@@ -1,17 +1,3 @@
-"""
-Steam 패치노트 -> 디스코드 웹훅 알림 (GitHub Actions cron용, 상시구동 불필요)
-
-동작
-- Steam RSS를 확인해서 마지막으로 본 글(guid) 이후의 새 글을 찾음
-- 새 글이 있으면 DISCORD_WEBHOOKS 에 등록된 모든 웹훅으로 임베드 전송
-- 마지막으로 본 글의 guid를 last_guid.txt 에 기록 (워크플로우가 이 파일을 다시 커밋함)
-
-환경 변수
-- DISCORD_WEBHOOKS : 디스코드 웹훅 URL, 여러 개면 쉼표(,)로 구분
-- STEAM_APPID      : (선택) 감시할 게임 appid. 기본값 1422450
-- STATE_FILE        : (선택) 마지막 guid 저장 파일 경로. 기본값 last_guid.txt
-"""
-
 import os
 import re
 import sys
@@ -116,7 +102,8 @@ def main() -> int:
     if last_guid is None: #최초실행
         newest = feed.entries[0].guid
         save_last_guid(newest)
-        log.info("Setting initial guid as %s", newest)
+        log.info("Setting initial guid as %s and sending latest announcement.", newest)
+        send_to_webhooks(webhooks, build_embed(feed.entries[0]))
         return 0
 
     new_entries = []
@@ -129,9 +116,6 @@ def main() -> int:
 
     if not new_entries:
         log.info("No new updates.")
-        if os.environ.get("DEBUG") == "true":
-            log.info("sending last announcement as debug test") 
-            send_to_webhooks(webhooks, build_embed(feed.entries[0]))
         return 0
 
     for entry in new_entries:
